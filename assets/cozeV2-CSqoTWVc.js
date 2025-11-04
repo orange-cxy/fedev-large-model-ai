@@ -1,2 +1,0 @@
-const t=(t,e={})=>({modelId:"cozeV2",bot_id:void 0,user:void 0,query:t,chat_history:[],stream:e.stream||!1,custom_variables:{prompt:t}}),e=t=>({context:t.messages[0].content});export{t as formatPayload,e as formatResponse};
-//# sourceMappingURL=cozeV2-CSqoTWVc.js.map
