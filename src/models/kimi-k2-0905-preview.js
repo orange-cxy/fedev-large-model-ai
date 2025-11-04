@@ -10,7 +10,7 @@ export const formatPayload = (messages, options = {}) => {
     "temperature": 0.3,
     "max_tokens": 8192,
     "top_p": 1,
-    "stream": false,
+    "stream": options.stream || false,
   };
 };
 

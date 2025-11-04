@@ -112,16 +112,75 @@ export function formatResponseForModel(model, response) {
 
 // 中间件函数：根据模型格式化请求payload
 export function formatPayloadForModel(model, messages, options = {}) {
+  // 默认开启流式响应
+  const stream = options.stream !== undefined ? options.stream : true;
+  
   if (model.formatPayload && typeof model.formatPayload === 'function') {
-    return model.formatPayload(messages, options);
+    return model.formatPayload(messages, { ...options, stream });
   }
   
   // 默认的请求格式
   return {
     model: model.model,
     messages,
-    stream: options.stream || false
+    stream
   };
+}
+
+// 流式响应处理辅助函数
+export async function processStreamResponse(response, callback) {
+  if (!response.body) {
+    throw new Error('Response body is not available');
+  }
+  
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = buffer + decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+      buffer = lines.pop(); // 保存不完整的行
+      
+      // 处理完整的行
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataPart = line.slice(6);
+          if (dataPart === '[DONE]') break;
+          
+          try {
+            const jsonData = JSON.parse(dataPart);
+            if (typeof callback === 'function') {
+              callback(jsonData);
+            }
+          } catch (error) {
+            console.error('Failed to parse JSON:', error, 'Line:', dataPart);
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+// 根据模型处理流式响应数据
+export function parseStreamChunk(model, chunk) {
+  console.log("chunk: ", chunk, model.parseStreamChunk)
+  if (model.parseStreamChunk && typeof model.parseStreamChunk === 'function') {
+    return model.parseStreamChunk(chunk);
+  }
+
+  
+  // 默认解析逻辑（兼容OpenAI/Deepseek格式）
+  if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
+    return chunk.choices[0].delta.content || '';
+  }
+  return '';
 }
 
 // 中间件函数：处理响应数据，统一格式

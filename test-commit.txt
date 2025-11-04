@@ -17,3 +17,4 @@ feat: 重构models-config.js，实现动态加载和聚合模型配置
 feat: 优化main.js请求处理逻辑，确保payload包含model字段
 feat: 扩展kimi模型支持，添加12个模型变体
 fix: 修复kimi模型配置，更正model名称为kimi-k2-0905-preview
+feat: 添加流式请求

@@ -6,7 +6,7 @@ export const formatPayload = (messages, options = {}) => {
     "user": import.meta.env.VITE_COZE_USER_ID,
     query: messages,
     chat_history: [],
-    stream: false,
+    "stream": options.stream || false,
     custom_variables: { prompt: messages }
   };
 };

@@ -1,5 +1,5 @@
 import './style.css'
-import { models, getCurrentModel, setCurrentModel, formatPayloadForModel, formatResponseForModel } from './models-config.js'
+import { models, getCurrentModel, setCurrentModel, formatPayloadForModel, formatResponseForModel, processStreamResponse, parseStreamChunk } from './models-config.js'
 
 // 尝试导入模式配置（可能由启动脚本生成）
 let modeConfig = null;
@@ -15,7 +15,7 @@ try {
   console.log('导入模式配置出错:', e);
 }
 
-// 创建应用内容，支持多模型切换
+// 创建应用内容，支持多模型切换和流式响应
 const app = document.getElementById('app');
 app.innerHTML = `
   <div class="container">
@@ -29,8 +29,18 @@ app.innerHTML = `
       <button id="btn-real" class="mode-btn">真实模式</button>
     </div>
     <div id="current-status" class="status-info">当前状态: Mock | Deepseek</div>
-    <div id="reply" class="reply">thinking...</div>
-    <button id="refresh-btn" class="refresh-btn">刷新响应</button>
+    
+    <!-- 新增文本输入区域 -->
+    <div class="input-area">
+      <textarea id="user-input" placeholder="请输入您的问题..."></textarea>
+      <button id="send-btn" class="send-btn">发送</button>
+    </div>
+    
+    <!-- 响应显示区域 -->
+    <div class="response-area">
+      <h3>AI回复：</h3>
+      <div id="reply" class="reply">请输入问题并发送</div>
+    </div>
   </div>
 `;
 
@@ -112,6 +122,63 @@ style.textContent = `
   }
   .refresh-btn:hover {
     background-color: #27ae60;
+  }
+  
+  /* 新增输入区域样式 */
+  .input-area {
+    margin: 1rem 0;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  #user-input {
+    flex: 1;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 60px;
+  }
+  
+  .send-btn {
+    padding: 0.8rem 1.5rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    white-space: nowrap;
+  }
+  
+  .send-btn:hover {
+    background-color: #2980b9;
+  }
+  
+  .send-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+  }
+  
+  .response-area {
+    margin-top: 1rem;
+    text-align: left;
+  }
+  
+  .response-area h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.1rem;
+  }
+  
+  .reply {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+    min-height: 60px;
+    line-height: 1.6;
   }
 `;
 document.head.appendChild(style);
@@ -219,21 +286,51 @@ function initApp() {
   // 添加事件监听器
   btnMock.addEventListener('click', () => {
     setMode(true);
-    fetchResponse(); // 切换后重新获取响应
   });
   
   btnReal.addEventListener('click', () => {
     setMode(false);
-    fetchResponse(); // 切换后重新获取响应
   });
   
-  refreshBtn.addEventListener('click', () => {
-    fetchResponse();
+  // 添加发送按钮事件监听器
+  const sendBtn = document.getElementById('send-btn');
+  const userInput = document.getElementById('user-input');
+  
+  sendBtn.addEventListener('click', () => {
+    sendMessage();
+  });
+  
+  // 添加回车键发送功能
+  userInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
   });
 }
 
+// 发送消息函数
+async function sendMessage() {
+  const userInput = document.getElementById('user-input');
+  const message = userInput.value.trim();
+  
+  if (!message) {
+    alert('请输入问题');
+    return;
+  }
+  
+  const sendBtn = document.getElementById('send-btn');
+  sendBtn.disabled = true;
+  
+  try {
+    await fetchResponse(message);
+  } finally {
+    sendBtn.disabled = false;
+  }
+}
+
 // 保存响应到文件的函数（仅在非mock模式下执行）
-async function saveResponseToFile(responseData) {
+async function saveResponseToFile(responseData, message) {
   // 在mock模式下不保存响应
   if (isMockMode()) {
     console.log('Mock模式下，不保存响应到文件');
@@ -241,7 +338,7 @@ async function saveResponseToFile(responseData) {
   }
   
   const currentModel = getCurrentModel();
-  const payload = currentModel.formatPayload(`你好 ${currentModel.name}`);
+  const payload = currentModel.formatPayload(message);
   
   // 准备要保存的数据，包括响应和元信息
   const saveData = {
@@ -250,6 +347,7 @@ async function saveResponseToFile(responseData) {
     modelName: currentModel.name,
     response: responseData,
     request: payload,
+    message: message,
   };
   
   try {
@@ -298,8 +396,8 @@ function fallbackToBrowserDownload(saveData) {
   console.log(`由于后端服务不可用，响应已保存为 ${fileName}（下载到您的默认下载文件夹）`);
 }
 
-// 通用模型API调用代码
-async function fetchModelResponse() {
+// 通用模型API调用代码，支持流式响应
+async function fetchModelResponse(message, onStreamChunk) {
   const mockMode = isMockMode();
   const currentModel = getCurrentModel();
   console.log(`当前模型: ${currentModel.name}, 模式: ${mockMode ? 'Mock' : '真实'}`);
@@ -307,31 +405,32 @@ async function fetchModelResponse() {
   try {
     let response;
     
-    // 准备消息内容
-    const messages = `你好 ${currentModel.name}`
+    // 准备请求参数
+    const options = {
+      stream: true,
+      isMock: mockMode
+    };
+    
+    // 使用中间件函数格式化请求payload
+    const payload = formatPayloadForModel(currentModel, message, options);
     
     if (mockMode) {
       // Mock模式：调用模拟API
-      console.log(`使用${currentModel.name}的Mock API`);
-      // 对于Mock模式，也可以使用格式化中间件
-      const mockPayload = formatPayloadForModel(currentModel, messages, {
-        // Mock模式特有的选项
-        isMock: true
-      });
+      console.log(`使用${currentModel.name}的Mock API`, JSON.stringify(payload, null, 2));
       
       response = await fetch(currentModel.mockEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(mockPayload.model ? mockPayload : {
-          ...mockPayload,
+        body: JSON.stringify(payload.model ? payload : {
+          ...payload,
           model: currentModel.id,
         })
       });
     } else {
       // 真实模式：调用真实API
-      console.log(`使用${currentModel.name}的真实API`, currentModel.apiKeyEnv, import.meta.env);
+      console.log(`使用${currentModel.name}的真实API`);
       // 获取API密钥
       const apiKey = import.meta.env[currentModel.apiKeyEnv] || currentModel.defaultKey;
       
@@ -340,11 +439,6 @@ async function fetchModelResponse() {
         Authorization: `Bearer ${apiKey}`
       };
 
-      // 使用中间件函数格式化请求payload，根据不同模型生成不同格式
-      const payload = formatPayloadForModel(currentModel, messages, {
-        stream: false,
-      });
-      
       console.log(`发送到${currentModel.name}的请求格式:`, JSON.stringify(payload, null, 2));
       
       response = await fetch(currentModel.endpoint, {
@@ -361,17 +455,38 @@ async function fetchModelResponse() {
       throw new Error(`${mockMode ? '模拟' : '真实'}API错误: ${response.status}`);
     }
 
-    const data = await response.json();
-    const assistantReply = formatResponseForModel(currentModel, data);
-    return {
-      response: data,
-      data: assistantReply,
+    // 如果需要流式处理
+    console.log("payload.stream && onStreamChunk", payload.stream, onStreamChunk, response)
+    if (payload.stream && onStreamChunk) {
+      let fullResponse = '';
+      
+      // 使用流式处理函数
+      await processStreamResponse(response, (chunk) => {
+        const textChunk = parseStreamChunk(currentModel, chunk);
+        fullResponse += textChunk;
+        onStreamChunk(textChunk, chunk);
+      });
+      
+      return {
+        response: fullResponse,
+        data: { context: fullResponse }
+      };
+    } else {
+      // 非流式处理（降级方案）
+      const data = await response.json();
+      const assistantReply = formatResponseForModel(currentModel, data);
+      return {
+        response: data,
+        data: assistantReply,
+      };
     }
   } catch (error) {
     console.error(`${mockMode ? '获取模拟' : '获取真实'}${currentModel.name}响应失败:`, error);
     
     // 使用模拟数据作为降级方案
-    const fallbackReply = `⚫ 这是一条${mockMode ? '模拟' : '测试'}响应数据（${currentModel.name}）${mockMode ? '，用于验证Mock模式功能。' : '，用于验证保存功能。'}`;
+    const fallbackReply = `⚫ 这是一条${mockMode ? '模拟' : '测试'}响应数据（${currentModel.name}）
+
+错误信息: ${error.message}`;
     
     // 不在这里设置UI，让调用者来处理
     return {
@@ -383,22 +498,58 @@ async function fetchModelResponse() {
   }
 }
 
-// 获取响应的主函数
-async function fetchResponse() {
+// 获取响应的主函数，支持流式显示
+async function fetchResponse(message) {
   const replyElement = document.getElementById('reply');
-  replyElement.textContent = 'thinking...';
+  replyElement.textContent = '正在生成回复...';
   
   // 更新状态显示
   updateStatusDisplay();
 
   try {
-    const response = await fetchModelResponse();
-    replyElement.textContent = response.data.context;
+    let fullResponse = '';
+    let streamEnded = false;
+    let lastResponseTime = Date.now();
+    let fullRawResponse = null;
+    
+    // 处理流式响应的回调函数
+    const onStreamChunk = (textChunk, rawChunk) => {
+      if (textChunk) {
+        fullResponse += textChunk;
+        replyElement.textContent = fullResponse;
+        lastResponseTime = Date.now();
+      }
+      
+      // 保存最后一个原始响应块用于保存
+      if (rawChunk) {
+        fullRawResponse = rawChunk;
+      }
+    };
+    
+    // 开始获取响应
+    const responsePromise = fetchModelResponse(message, onStreamChunk);
+    
+    // 添加超时检测
+    const checkTimeout = setInterval(() => {
+      if (Date.now() - lastResponseTime > 30000) { // 30秒无响应认为超时
+        replyElement.textContent += '\n\n⚠️ 响应超时，可能已断开连接。';
+        streamEnded = true;
+        clearInterval(checkTimeout);
+      }
+    }, 1000);
+    
+    // 等待响应完成
+    const finalResponse = await responsePromise;
+    streamEnded = true;
+    clearInterval(checkTimeout);
+    
+    // 更新最终响应
+    replyElement.textContent = finalResponse.data.context;
     
     // 保存响应到文件（仅在非mock模式下）
     const isMock = isMockMode();
-    if (!isMock && !response.data.context.startsWith('⚫')) {
-      await saveResponseToFile(response.response);
+    if (!isMock && !finalResponse.data.context.startsWith('⚫')) {
+      await saveResponseToFile(fullRawResponse || finalResponse.response, message);
     }
   } catch (error) {
     console.error('获取响应失败:', error);
@@ -408,6 +559,3 @@ async function fetchResponse() {
 
 // 初始化应用
 initApp();
-
-// 立即执行获取响应
-fetchResponse();

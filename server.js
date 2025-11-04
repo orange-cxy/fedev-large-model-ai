@@ -93,6 +93,76 @@ function getModelHistoryFiles(modelId) {
   }
 }
 
+// 创建流式响应的块
+function createStreamChunk(modelId, content, index = 0, isLast = false) {
+  const chunk = {
+    id: `mock-${modelId}-stream-${Date.now()}`,
+    object: 'chat.completion.chunk',
+    created: Math.floor(Date.now() / 1000),
+    model: `${modelId}-chat`,
+    choices: [
+      {
+        index: index,
+        delta: isLast ? {} : { content: content },
+        finish_reason: isLast ? 'stop' : null
+      }
+    ]
+  };
+  return `data: ${JSON.stringify(chunk)}\n\n`;
+}
+
+// 处理流式响应
+function handleStreamResponse(req, res, modelId, content) {
+  // 设置响应头为事件流
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  
+  // 将内容拆分成多个块
+  const words = content.split(' ');
+  let currentChunk = '';
+  let chunkIndex = 0;
+  
+  // 创建定时器，模拟流式数据传输
+  const intervalId = setInterval(() => {
+    if (words.length === 0) {
+      // 发送最后一个块并结束流
+      res.write(createStreamChunk(modelId, '', 0, true));
+      res.end();
+      clearInterval(intervalId);
+      return;
+    }
+    
+    // 添加1-3个词到当前块
+    const wordsToAdd = Math.min(Math.floor(Math.random() * 3) + 1, words.length);
+    for (let i = 0; i < wordsToAdd; i++) {
+      if (i > 0) currentChunk += ' ';
+      currentChunk += words.shift();
+    }
+    
+    // 添加标点符号的概率
+    const punctuation = ['.', ',', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '];
+    if (Math.random() > 0.7 && words.length > 0) {
+      const randomPunc = punctuation[Math.floor(Math.random() * punctuation.length)];
+      currentChunk += randomPunc;
+    }
+    
+    // 发送当前块
+    res.write(createStreamChunk(modelId, currentChunk));
+    currentChunk = '';
+    chunkIndex++;
+    
+  }, 100 + Math.random() * 200); // 随机延迟，模拟真实网络
+  
+  // 处理连接关闭
+  req.on('close', () => {
+    clearInterval(intervalId);
+    res.end();
+  });
+}
+
 // 处理模拟请求的通用函数
 function handleMockRequest(req, res, defaultMessage) {
   try {
@@ -110,37 +180,75 @@ function handleMockRequest(req, res, defaultMessage) {
       userMessage = req.body.prompt;
     }
     
+    // 检查是否为流式请求
+    const isStream = req.body.stream === true;
+    
+    // 生成响应内容
+    let responseContent = '';
+    let useHistory = false;
+    
     // 读取特定模型的历史记录文件
     const files = getModelHistoryFiles(req.body.modelId);
     
-    if (files.length === 0) {
-      // 如果没有历史记录，返回一个默认的模拟响应
-      const defaultResponse = createMockResponse(
-        req.body.modelId, 
-        `${defaultMessage}\n\n您的请求: ${userMessage || 'Hello'}`
-      );
-      return res.json(defaultResponse);
+    if (files.length > 0) {
+      // 随机选择一个历史记录文件
+      const randomFile = files[Math.floor(Math.random() * files.length)];
+      const filePath = path.join(chatDir, randomFile);
+      
+      try {
+        // 读取文件内容并返回模拟响应
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        const data = JSON.parse(fileContent);
+        
+        // 提取响应内容
+        if (data.response && data.response.choices && data.response.choices[0] && 
+            data.response.choices[0].message && data.response.choices[0].message.content) {
+          responseContent = data.response.choices[0].message.content;
+          useHistory = true;
+        }
+      } catch (e) {
+        console.log(`读取历史文件失败，使用默认响应:`, e);
+        useHistory = false;
+      }
     }
     
-    // 随机选择一个历史记录文件
-    const randomFile = files[Math.floor(Math.random() * files.length)];
-    const filePath = path.join(chatDir, randomFile);
+    // 如果没有历史记录或读取失败，生成默认响应
+    if (!useHistory) {
+      responseContent = `${defaultMessage}\n\n您的请求: ${userMessage || 'Hello'}\n\n这是一个模拟的流式响应示例。在实际应用中，您将看到文本逐字显示，就像我现在正在为您生成回答一样。`;
+    }
     
-    // 读取文件内容并返回模拟响应
-    const fileContent = fs.readFileSync(filePath, 'utf8');
-    const data = JSON.parse(fileContent);
+    console.log(`返回${req.body.modelId}${isStream ? '流式' : ''}模拟响应${useHistory ? '，使用历史文件' : '，使用默认内容'}`);
     
-    // 构建响应（确保使用特定模型的信息）
-    const response = data.response;
-    
-    console.log(`返回${req.body.modelId}模拟响应，使用文件: ${randomFile}`);
-    res.json(response);
+    if (isStream) {
+      // 处理流式响应
+      handleStreamResponse(req, res, req.body.modelId, responseContent);
+    } else {
+      // 处理普通响应
+      const defaultResponse = createMockResponse(
+        req.body.modelId, 
+        responseContent
+      );
+      res.json(defaultResponse);
+    }
   } catch (error) {
     console.error(`获取${req.body.modelId}模拟响应失败:`, error);
-    res.status(500).json({
-      error: '获取模拟响应失败',
-      message: error.message
-    });
+    
+    // 如果是流式请求，先设置响应头
+    if (req.body.stream === true) {
+      res.writeHead(500, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
+      res.write(createStreamChunk(req.body.modelId || 'unknown', `错误: ${error.message}`));
+      res.write(createStreamChunk(req.body.modelId || 'unknown', '', 0, true));
+      res.end();
+    } else {
+      res.status(500).json({
+        error: '获取模拟响应失败',
+        message: error.message
+      });
+    }
   }
 }
 

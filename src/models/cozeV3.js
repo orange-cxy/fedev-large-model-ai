@@ -4,7 +4,7 @@ export const formatPayload = (messages, options = {}) => {
     "modelId": "cozeV3",
     "bot_id": import.meta.env.VITE_COZE_BOT_ID,
     "user_id": import.meta.env.VITE_COZE_USER_ID,
-    "stream": false,
+    "stream": options.stream || false,
     query: '你好',
     chat_history: [], 
     custom_variables: { prompt: messages }
