@@ -21,36 +21,87 @@ if (!isMockMode && !fs.existsSync(chatDir)) {
   fs.mkdirSync(chatDir, { recursive: true });
 }
 
+// 通用模拟API函数
+function createMockResponse(modelId, modelName, defaultMessage) {
+  return {
+    id: `mock-${modelId}-response-${Date.now()}`,
+    object: 'chat.completion',
+    created: Math.floor(Date.now() / 1000),
+    model: modelName,
+    choices: [
+      {
+        index: 0,
+        message: {
+          role: 'assistant',
+          content: defaultMessage
+        },
+        finish_reason: 'stop'
+      }
+    ],
+    usage: {
+      prompt_tokens: 15,
+      completion_tokens: 20,
+      total_tokens: 35
+    }
+  };
+}
+
+// 获取历史记录文件（按模型ID过滤）
+function getModelHistoryFiles(modelId) {
+  try {
+    if (!fs.existsSync(chatDir)) {
+      return [];
+    }
+    const allFiles = fs.readdirSync(chatDir).filter(file => file.endsWith('.json'));
+    
+    // 尝试按模型ID过滤文件
+    if (modelId) {
+      // 方法1: 根据文件名中的模型ID过滤
+      const modelFiles = allFiles.filter(file => file.includes(`-${modelId}-`));
+      if (modelFiles.length > 0) {
+        return modelFiles;
+      }
+      
+      // 方法2: 读取文件内容检查model字段
+      const contentFilteredFiles = [];
+      for (const file of allFiles) {
+        try {
+          const filePath = path.join(chatDir, file);
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const data = JSON.parse(fileContent);
+          if (data.model === modelId) {
+            contentFilteredFiles.push(file);
+          }
+        } catch (e) {
+          console.log(`读取文件 ${file} 失败，跳过:`, e);
+        }
+      }
+      
+      if (contentFilteredFiles.length > 0) {
+        return contentFilteredFiles;
+      }
+    }
+    
+    return allFiles; // 如果没有找到特定模型的文件，返回所有文件
+  } catch (error) {
+    console.error('获取历史记录文件失败:', error);
+    return [];
+  }
+}
+
 // 模拟的Deepseek API端点
 app.post('/api/mock-deepseek', (req, res) => {
   try {
-    // 读取chat目录中的所有JSON文件
-    const files = fs.readdirSync(chatDir).filter(file => file.endsWith('.json'));
+    // 读取特定于Deepseek的历史记录文件
+    const files = getModelHistoryFiles('deepseek');
     
     if (files.length === 0) {
       // 如果没有历史记录，返回一个默认的模拟响应
-      const defaultResponse = {
-        id: 'mock-response-' + Date.now(),
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model: 'deepseek-chat',
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: '您好！这是来自模拟Deepseek API的响应。我可以帮助您解答各种问题。'
-            },
-            finish_reason: 'stop'
-          }
-        ],
-        usage: {
-          prompt_tokens: 15,
-          completion_tokens: 20,
-          total_tokens: 35
-        }
-      };
-      
+      const defaultResponse = createMockResponse(
+        'deepseek', 
+        'deepseek-chat',
+        '您好！这是来自模拟Deepseek API的响应。我可以帮助您解答各种问题。'
+      );
       return res.json(defaultResponse);
     }
     
@@ -58,22 +109,22 @@ app.post('/api/mock-deepseek', (req, res) => {
     const randomFile = files[Math.floor(Math.random() * files.length)];
     const filePath = path.join(chatDir, randomFile);
     
-    // 读取文件内容
+    // 读取文件内容并返回模拟响应
     const fileContent = fs.readFileSync(filePath, 'utf8');
     const data = JSON.parse(fileContent);
     
-    // 返回保存的响应数据
+    // 构建响应（确保使用deepseek相关的信息）
     const response = {
-      id: data.response.id || 'mock-' + Date.now(),
+      id: data.response.id || `mock-deepseek-${Date.now()}`,
       object: data.response.object || 'chat.completion',
       created: Math.floor(Date.now() / 1000),
-      model: data.response.model || 'deepseek-chat',
+      model: 'deepseek-chat',
       choices: data.response.choices || [
         {
           index: 0,
           message: {
             role: 'assistant',
-            content: data.response.choices?.[0]?.message?.content || '这是一条从历史记录中检索的响应。'
+            content: data.response.choices?.[0]?.message?.content || '这是一条从Deepseek历史记录中检索的响应。'
           },
           finish_reason: data.response.choices?.[0]?.finish_reason || 'stop'
         }
@@ -85,10 +136,68 @@ app.post('/api/mock-deepseek', (req, res) => {
       }
     };
     
-    console.log(`返回模拟响应，使用文件: ${randomFile}`);
+    console.log(`返回Deepseek模拟响应，使用文件: ${randomFile}`);
     res.json(response);
   } catch (error) {
-    console.error('获取模拟响应失败:', error);
+    console.error('获取Deepseek模拟响应失败:', error);
+    res.status(500).json({
+      error: '获取模拟响应失败',
+      message: error.message
+    });
+  }
+});
+
+// 模拟的Coze API端点
+app.post('/api/mock-coze', (req, res) => {
+  try {
+    // 读取特定于Coze的历史记录文件
+    const files = getModelHistoryFiles('coze');
+    
+    if (files.length === 0) {
+      // 如果没有历史记录，返回一个默认的模拟响应
+      const defaultResponse = createMockResponse(
+        'coze', 
+        'coze-chat',
+        '您好！这是来自模拟Coze API的响应。我可以协助您完成各种任务和回答问题。'
+      );
+      return res.json(defaultResponse);
+    }
+    
+    // 随机选择一个历史记录文件
+    const randomFile = files[Math.floor(Math.random() * files.length)];
+    const filePath = path.join(chatDir, randomFile);
+    
+    // 读取文件内容并返回模拟响应
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(fileContent);
+    
+    // 构建响应（确保使用coze相关的信息）
+    const response = {
+      id: data.response.id || `mock-coze-${Date.now()}`,
+      object: data.response.object || 'chat.completion',
+      created: Math.floor(Date.now() / 1000),
+      model: 'coze-chat',
+      choices: data.response.choices || [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content: data.response.choices?.[0]?.message?.content || '这是一条从Coze历史记录中检索的响应。'
+          },
+          finish_reason: data.response.choices?.[0]?.finish_reason || 'stop'
+        }
+      ],
+      usage: data.response.usage || {
+        prompt_tokens: 20,
+        completion_tokens: 15,
+        total_tokens: 35
+      }
+    };
+    
+    console.log(`返回Coze模拟响应，使用文件: ${randomFile}`);
+    res.json(response);
+  } catch (error) {
+    console.error('获取Coze模拟响应失败:', error);
     res.status(500).json({
       error: '获取模拟响应失败',
       message: error.message
@@ -99,9 +208,15 @@ app.post('/api/mock-deepseek', (req, res) => {
 // 保存聊天记录的API端点
 app.post('/api/save-chat', (req, res) => {
   try {
-    // 生成唯一的文件名
+    // 确保chat目录存在
+    if (!fs.existsSync(chatDir)) {
+      fs.mkdirSync(chatDir, { recursive: true });
+    }
+    
+    // 生成唯一的文件名，包含模型ID
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `${timestamp}-response.json`;
+    const modelId = req.body.model || 'unknown';
+    const fileName = `${timestamp}-${modelId}-response.json`;
     const filePath = path.join(chatDir, fileName);
     
     // 保存文件

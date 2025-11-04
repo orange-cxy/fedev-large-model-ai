@@ -10,3 +10,4 @@ feat: 安装http-server支持本地预览构建结果
 feat: 安装gh-pages依赖并修复部署命令参数格式
 fix: 修复package.json中缺少逗号的语法错误
 feat: 添加预览地址
+feat: 添加coze，支持多模型切换测试

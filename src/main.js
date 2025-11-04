@@ -1,4 +1,5 @@
 import './style.css'
+import { models, getCurrentModel, setCurrentModel } from './models-config.js'
 
 // 尝试导入模式配置（可能由启动脚本生成）
 let modeConfig = null;
@@ -14,16 +15,20 @@ try {
   console.log('导入模式配置出错:', e);
 }
 
-// 创建Hello Deepseek内容
+// 创建应用内容，支持多模型切换
 const app = document.getElementById('app');
 app.innerHTML = `
   <div class="container">
-    <h1>Hello Deepseek!</h1>
+    <h1>AI 对话助手</h1>
+    <div class="model-selector">
+      <label for="model-select">选择模型：</label>
+      <select id="model-select"></select>
+    </div>
     <div class="mode-switcher">
       <button id="btn-mock" class="mode-btn active">Mock模式</button>
       <button id="btn-real" class="mode-btn">真实模式</button>
     </div>
-    <div id="current-mode" class="mode-info">当前模式: Mock</div>
+    <div id="current-status" class="status-info">当前状态: Mock | Deepseek</div>
     <div id="reply" class="reply">thinking...</div>
     <button id="refresh-btn" class="refresh-btn">刷新响应</button>
   </div>
@@ -62,6 +67,51 @@ style.textContent = `
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  .model-selector {
+    margin-bottom: 1rem;
+  }
+  .model-selector select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  .status-info {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
+  }
+  .mode-switcher {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .mode-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .mode-btn.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+  }
+  .refresh-btn {
+    padding: 0.5rem 1.5rem;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .refresh-btn:hover {
+    background-color: #27ae60;
   }
 `;
 document.head.appendChild(style);
@@ -118,16 +168,49 @@ function setMode(isMock) {
   // 更新UI
   document.getElementById('btn-mock').classList.toggle('active', isMock);
   document.getElementById('btn-real').classList.toggle('active', !isMock);
-  document.getElementById('current-mode').textContent = `当前模式: ${isMock ? 'Mock' : '真实'}`;
+  updateStatusDisplay(isMock);
   
   console.log(`模式已切换为: ${isMock ? 'mock' : 'real'}`);
 }
 
-// 初始化模式切换
-function initModeSwitcher() {
+// 更新状态显示
+function updateStatusDisplay(isMock = null) {
+  const currentIsMock = isMock !== null ? isMock : isMockMode();
+  const currentModel = getCurrentModel();
+  document.getElementById('current-status').textContent = `当前状态: ${currentIsMock ? 'Mock' : '真实'} | ${currentModel.name}`;
+}
+
+// 初始化模型选择器
+function initModelSelector() {
+  const modelSelect = document.getElementById('model-select');
+  const currentModel = getCurrentModel();
+  
+  // 添加所有模型选项
+  models.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.name;
+    option.selected = model.id === currentModel.id;
+    modelSelect.appendChild(option);
+  });
+  
+  // 添加事件监听器
+  modelSelect.addEventListener('change', (event) => {
+    const selectedModelId = event.target.value;
+    setCurrentModel(selectedModelId);
+    updateStatusDisplay();
+    fetchResponse(); // 切换模型后重新获取响应
+  });
+}
+
+// 初始化应用
+function initApp() {
   const btnMock = document.getElementById('btn-mock');
   const btnReal = document.getElementById('btn-real');
   const refreshBtn = document.getElementById('refresh-btn');
+  
+  // 初始化模型选择器
+  initModelSelector();
   
   // 初始状态
   const initialMode = isMockMode();
@@ -157,15 +240,19 @@ async function saveResponseToFile(responseData) {
     return;
   }
   
+  const currentModel = getCurrentModel();
+  
   // 准备要保存的数据，包括响应和元信息
   const saveData = {
     timestamp: new Date().toISOString(),
+    model: currentModel.id,
+    modelName: currentModel.name,
     response: responseData,
     request: {
-      model: 'deepseek-chat',
+      model: currentModel.model,
       messages: [
         {role: "system", content: "You are a helpful assistant."},
-        {role: "user", content: "你好 Deepseek"}
+        {role: "user", content: `你好 ${currentModel.name}`}
       ]
     }
   };
@@ -192,14 +279,15 @@ async function saveResponseToFile(responseData) {
     console.error('保存文件时发生错误:', error);
     
     // 降级处理：如果后端服务不可用，退回到浏览器下载方式
-    fallbackToBrowserDownload(saveData);
+    // fallbackToBrowserDownload(saveData);
   }
 }
 
 // 降级处理：浏览器下载方式
 function fallbackToBrowserDownload(saveData) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const fileName = `${timestamp}-response.json`;
+  const modelId = saveData.model || 'unknown';
+  const fileName = `${timestamp}-${modelId}-response.json`;
   
   const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
@@ -215,45 +303,48 @@ function fallbackToBrowserDownload(saveData) {
   console.log(`由于后端服务不可用，响应已保存为 ${fileName}（下载到您的默认下载文件夹）`);
 }
 
-// Deepseek API调用代码
-async function fetchDeepseekResponse() {
+// 通用模型API调用代码
+async function fetchModelResponse() {
   const mockMode = isMockMode();
-  console.log(`当前模式: ${mockMode ? 'Mock' : '真实'}`);
+  const currentModel = getCurrentModel();
+  console.log(`当前模型: ${currentModel.name}, 模式: ${mockMode ? 'Mock' : '真实'}`);
   
   try {
     let response;
     if (mockMode) {
       // Mock模式：调用模拟API
-      console.log('使用Mock API');
-      response = await fetch('http://localhost:3001/api/mock-deepseek', {
+      console.log(`使用${currentModel.name}的Mock API`);
+      response = await fetch(currentModel.mockEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          prompt: "你好 Deepseek"
+          prompt: `你好 ${currentModel.name}`
         })
       });
     } else {
-      // 真实模式：调用真实Deepseek API
-      console.log('使用真实Deepseek API');
-      // 这里保留原有逻辑，实际使用时需要配置API密钥
-      const endpoint = 'https://api.deepseek.com/chat/completions';
+      // 真实模式：调用真实API
+      console.log(`使用${currentModel.name}的真实API`);
+      // 获取API密钥
+      const apiKey = import.meta.env[currentModel.apiKeyEnv] || currentModel.defaultKey;
+      
       const headers = {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${import.meta.env.VITE_DEEPSEEK_API_KEY || 'demo_key'}`
+        Authorization: `Bearer ${apiKey}`
       };
 
+      // 通用的请求负载，不同模型可能需要调整
       const payload = {
-        model: 'deepseek-chat',
+        model: currentModel.model,
         messages: [
           {role: "system", content: "You are a helpful assistant."},
-          {role: "user", content: "你好 Deepseek"}
+          {role: "user", content: `你好 ${currentModel.name}`}
         ],
         stream: false
       };
       
-      response = await fetch(endpoint, {
+      response = await fetch(currentModel.endpoint, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(payload)
@@ -266,18 +357,12 @@ async function fetchDeepseekResponse() {
 
     const data = await response.json();
     const assistantReply = data.choices[0].message.content;
-    
-    // 保存响应到文件（saveResponseToFile内部会检查是否为mock模式）
-    // 注意：这里不使用await，避免阻塞返回
-    saveResponseToFile(data).catch(err => console.error('保存响应失败:', err));
-    
-    // 返回响应内容，让fetchResponse函数可以设置到界面上
     return assistantReply;
   } catch (error) {
-    console.error(`${mockMode ? '获取模拟' : '获取真实'}Deepseek响应失败:`, error);
+    console.error(`${mockMode ? '获取模拟' : '获取真实'}${currentModel.name}响应失败:`, error);
     
     // 使用模拟数据作为降级方案
-    const fallbackReply = `这是一条${mockMode ? '模拟' : '测试'}响应数据${mockMode ? '，用于验证Mock模式功能。' : '，用于验证保存功能。'}`;
+    const fallbackReply = `⚫ 这是一条${mockMode ? '模拟' : '测试'}响应数据（${currentModel.name}）${mockMode ? '，用于验证Mock模式功能。' : '，用于验证保存功能。'}`;
     
     // 不在这里设置UI，让调用者来处理
     return fallbackReply;
@@ -289,16 +374,16 @@ async function fetchResponse() {
   const replyElement = document.getElementById('reply');
   replyElement.textContent = 'thinking...';
   
-  // 显示当前模式
-  const isMock = isMockMode();
-  document.getElementById('current-mode').textContent = `当前模式: ${isMock ? 'Mock' : '真实'}`;
+  // 更新状态显示
+  updateStatusDisplay();
 
   try {
-    const response = await fetchDeepseekResponse();
+    const response = await fetchModelResponse();
     replyElement.textContent = response;
     
     // 保存响应到文件（仅在非mock模式下）
-    if (!isMock) {
+    const isMock = isMockMode();
+    if (!isMock && !response.startsWith('⚫')) {
       await saveResponseToFile(response);
     }
   } catch (error) {
@@ -307,8 +392,8 @@ async function fetchResponse() {
   }
 }
 
-// 初始化模式切换器
-initModeSwitcher();
+// 初始化应用
+initApp();
 
 // 立即执行获取响应
 fetchResponse();
