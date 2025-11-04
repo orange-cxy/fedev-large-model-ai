@@ -5,3 +5,7 @@ doc: 更新README使用PNG图片替代SVG代码，提高兼容性
 feat: 添加GitHub Pages静态部署支持，创建vite.config.js配置文件
 feat: 优化应用在静态环境下的表现，添加本地模拟数据和环境检测
 feat: 配置GitHub Actions自动构建部署流水线
+fix: 安装terser作为开发依赖解决Vite构建错误
+feat: 安装http-server支持本地预览构建结果
+feat: 安装gh-pages依赖并修复部署命令参数格式
+fix: 修复package.json中缺少逗号的语法错误
