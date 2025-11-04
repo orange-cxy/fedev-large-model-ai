@@ -20,3 +20,4 @@ fix: 修复kimi模型配置，更正model名称为kimi-k2-0905-preview
 feat: 添加流式请求
 fix: 修复coze中流式请求异常的问题
 test: 修复commit工具
+doc: 完善项目文档
