@@ -53,6 +53,7 @@ async function initializeModels() {
           ...config,
           formatPayload: jsModule.formatPayload,
           formatResponse: jsModule.formatResponse,
+          parseStreamChunk: jsModule.parseStreamChunk, // 添加流式解析函数
           ...modelFile.options,
         };
       } catch (error) {
@@ -142,26 +143,49 @@ export async function processStreamResponse(response, callback) {
       const { done, value } = await reader.read();
       if (done) break;
       
+      // 解码新数据并与缓冲区合并
       const chunk = buffer + decoder.decode(value, { stream: true });
       const lines = chunk.split('\n');
       buffer = lines.pop(); // 保存不完整的行
       
       // 处理完整的行
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const dataPart = line.slice(6);
-          if (dataPart === '[DONE]') break;
-          
-          try {
-            const jsonData = JSON.parse(dataPart);
-            if (typeof callback === 'function') {
-              callback(jsonData);
+        // 跳过空行
+        if (line.trim() === '') continue;
+        
+        // 尝试多种格式解析
+        try {
+          // 格式1: 标准SSE格式 (data: JSON)
+          if (line.startsWith('data: ')) {
+            const dataPart = line.slice(6);
+            if (dataPart === '[DONE]') break;
+            
+            try {
+              const jsonData = JSON.parse(dataPart);
+              if (typeof callback === 'function') {
+                callback(jsonData);
+              }
+            } catch (jsonError) {
+              // 如果JSON解析失败，直接传递原始字符串
+              console.warn('Failed to parse JSON, passing raw string:', jsonError);
+              if (typeof callback === 'function') {
+                callback(line);
+              }
             }
-          } catch (error) {
-            console.error('Failed to parse JSON:', error, 'Line:', dataPart);
+          } 
+          // 格式2: 直接传递原始数据给回调函数
+          else if (typeof callback === 'function') {
+            callback(line);
           }
+        } catch (error) {
+          console.error('Error processing stream line:', error, 'Line:', line);
         }
       }
+    }
+    
+    // 处理最后的缓冲区内容
+    if (buffer.trim() && typeof callback === 'function') {
+      callback(buffer);
     }
   } finally {
     reader.releaseLock();
