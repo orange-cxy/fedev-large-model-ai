@@ -2,3 +2,6 @@ feat: 更新git-auto-push脚本，支持从test-commit.txt提取commit消息
 bug: 修复脚本无法检测未跟踪文件的问题
 doc: 完善README文档，添加项目介绍、技术栈、架构图和未来优化点
 doc: 更新README使用PNG图片替代SVG代码，提高兼容性
+feat: 添加GitHub Pages静态部署支持，创建vite.config.js配置文件
+feat: 优化应用在静态环境下的表现，添加本地模拟数据和环境检测
+feat: 配置GitHub Actions自动构建部署流水线
