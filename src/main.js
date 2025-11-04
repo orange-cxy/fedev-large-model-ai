@@ -1,5 +1,5 @@
 import './style.css'
-import { models, getCurrentModel, setCurrentModel } from './models-config.js'
+import { models, getCurrentModel, setCurrentModel, formatPayloadForModel } from './models-config.js'
 
 // 尝试导入模式配置（可能由启动脚本生成）
 let modeConfig = null;
@@ -311,17 +311,25 @@ async function fetchModelResponse() {
   
   try {
     let response;
+    
+    // 准备消息内容
+    const messages = `你好 ${currentModel.name}`
+    
     if (mockMode) {
       // Mock模式：调用模拟API
       console.log(`使用${currentModel.name}的Mock API`);
+      // 对于Mock模式，也可以使用格式化中间件
+      const mockPayload = formatPayloadForModel(currentModel, messages, {
+        // Mock模式特有的选项
+        isMock: true
+      });
+      
       response = await fetch(currentModel.mockEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          prompt: `你好 ${currentModel.name}`
-        })
+        body: JSON.stringify(mockPayload)
       });
     } else {
       // 真实模式：调用真实API
@@ -334,15 +342,12 @@ async function fetchModelResponse() {
         Authorization: `Bearer ${apiKey}`
       };
 
-      // 通用的请求负载，不同模型可能需要调整
-      const payload = {
-        model: currentModel.model,
-        messages: [
-          {role: "system", content: "You are a helpful assistant."},
-          {role: "user", content: `你好 ${currentModel.name}`}
-        ],
-        stream: false
-      };
+      // 使用中间件函数格式化请求payload，根据不同模型生成不同格式
+      const payload = formatPayloadForModel(currentModel, messages, {
+        stream: false,
+      });
+      
+      console.log(`发送到${currentModel.name}的请求格式:`, JSON.stringify(payload, null, 2));
       
       response = await fetch(currentModel.endpoint, {
         method: 'POST',

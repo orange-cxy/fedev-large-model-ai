@@ -7,7 +7,18 @@ export const models = [
     apiKeyEnv: 'VITE_DEEPSEEK_API_KEY',
     defaultKey: 'demo_key',
     model: 'deepseek-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-deepseek'
+    mockEndpoint: 'http://localhost:3001/api/mock-deepseek',
+    // Deepseek模型的请求格式化函数
+    formatPayload: (messages, options = {}) => {
+      return {
+        "model": "deepseek-chat",
+        "messages": [
+          {"role": "system", "content": "You are a helpful assistant."},
+          {"role": "user", "content": messages}
+        ],
+        "stream": options.stream || false,
+      };
+    }
   },
   {
     id: 'coze',
@@ -16,9 +27,47 @@ export const models = [
     apiKeyEnv: 'VITE_COZE_API_KEY',
     defaultKey: 'demo_key',
     model: 'coze-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-coze'
+    mockEndpoint: 'http://localhost:3001/api/mock-coze',
+    // Coze模型的请求格式化函数
+    formatPayload: (messages, options = {}) => {
+      return {
+        "bot_id": import.meta.env.VITE_COZE_BOT_ID,
+        "user_id": import.meta.env.VITE_COZE_USER_ID,
+        "stream": options.stream || false,
+        "additional_messages": [
+            {
+            "content": messages,
+            "content_type": "text",
+            "role": "user",
+            "type": "question"
+            }
+        ],
+        "parameters": {}
+      };
+    }
   }
 ];
+
+// 中间件函数：根据模型格式化请求payload
+export function formatPayloadForModel(model, messages, options = {}) {
+  if (model.formatPayload && typeof model.formatPayload === 'function') {
+    return model.formatPayload(messages, options);
+  }
+  
+  // 默认格式化函数（兼容OpenAI风格）
+  return {
+    model: model.model,
+    messages: messages,
+    stream: options.stream || false
+  };
+}
+
+// 中间件函数：处理响应数据，统一格式
+export function processResponseForModel(model, rawResponse) {
+  // 这里可以根据不同模型的响应格式进行标准化处理
+  // 目前假设所有模型都返回与OpenAI兼容的格式
+  return rawResponse;
+}
 
 // 获取默认模型
 export function getDefaultModel() {
