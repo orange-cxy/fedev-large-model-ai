@@ -13,3 +13,7 @@ feat: 添加预览地址
 feat: 添加coze，支持多模型切换测试
 feat: 统一模拟API接口，优化handleMockRequest函数处理逻辑
 feat: 优化models-config，添加模型特定的响应格式化函数
+feat: 重构models-config.js，实现动态加载和聚合模型配置
+feat: 优化main.js请求处理逻辑，确保payload包含model字段
+feat: 扩展kimi模型支持，添加12个模型变体
+fix: 修复kimi模型配置，更正model名称为kimi-k2-0905-preview

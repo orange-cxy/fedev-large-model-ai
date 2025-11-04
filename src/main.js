@@ -241,6 +241,7 @@ async function saveResponseToFile(responseData) {
   }
   
   const currentModel = getCurrentModel();
+  const payload = currentModel.formatPayload(`你好 ${currentModel.name}`);
   
   // 准备要保存的数据，包括响应和元信息
   const saveData = {
@@ -248,7 +249,7 @@ async function saveResponseToFile(responseData) {
     model: currentModel.id,
     modelName: currentModel.name,
     response: responseData,
-    request: currentModel.formatPayload(`你好 ${currentModel.name}`),
+    request: payload,
   };
   
   try {
@@ -323,7 +324,10 @@ async function fetchModelResponse() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(mockPayload)
+        body: JSON.stringify(mockPayload.model ? mockPayload : {
+          ...mockPayload,
+          model: currentModel.id,
+        })
       });
     } else {
       // 真实模式：调用真实API
@@ -346,7 +350,10 @@ async function fetchModelResponse() {
       response = await fetch(currentModel.endpoint, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload.model ? payload : {
+          ...payload,
+          model: currentModel.id,
+        })
       });
     }
 

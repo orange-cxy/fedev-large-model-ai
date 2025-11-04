@@ -1,16 +1,81 @@
 // 大模型配置文件
-export const models = [
-  {
-    id: 'deepseek',
-    name: 'Deepseek',
-    endpoint: 'https://api.deepseek.com/chat/completions',
-    apiKeyEnv: 'VITE_DEEPSEEK_API_KEY',
-    defaultKey: 'demo_key',
-    model: 'deepseek-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-api',
-    // Deepseek模型的请求格式化函数
-    formatPayload: (messages, options = {}) => {
-      return {
+
+// 模型配置和函数的聚合
+// const modelFiles = [
+//   { id: 'deepseek', json: () => import('./models/deepseek.json'), js: () => import('./models/deepseek.js') },
+//   { id: 'cozeV3', json: () => import('./models/cozeV3.json'), js: () => import('./models/cozeV3.js') },
+//   { id: 'cozeV2', json: () => import('./models/cozeV2.json'), js: () => import('./models/cozeV2.js') },
+//   { id: 'kimi-k2-0905-preview', json: () => import('./models/kimi-k2-0905-preview.json'), js: () => import('./models/kimi-k2-0905-preview.js') }
+// ];
+let modelFiles = [
+  "deepseek",
+  "cozeV3",
+  "cozeV2",
+  "kimi-k2-0905-preview",
+].map(item => ({
+  id: item,
+  json: () => import(`./models/${item}.json`),
+  js: () => import(`./models/${item}.js`)
+}))
+
+const kimiModelFiles = ['kimi-k2-0711-preview', 'kimi-k2-0905-preview', 'kimi-k2-turbo-preview', 'kimi-latest', 'kimi-thinking-preview', 'moonshot-v1-128k', 'moonshot-v1-128k-vision-preview', 'moonshot-v1-32k', 'moonshot-v1-32k-vision-preview', 'moonshot-v1-8k', 'moonshot-v1-8k-vision-preview', 'moonshot-v1-auto'].map(item => {
+  return {
+    id: item,
+    json: () => import(`./models/kimi-k2-0905-preview.json`),
+    js: () => import(`./models/kimi-k2-0905-preview.js`),
+    options: {
+      "id": item,
+      "name": item,
+      "model": item,
+    },
+  }
+})
+
+modelFiles = modelFiles.concat(kimiModelFiles)
+
+// 动态加载所有模型配置
+let models = [];
+
+// 初始化函数，用于异步加载所有模型
+async function initializeModels() {
+  const loadedModels = await Promise.all(
+    modelFiles.map(async (modelFile) => {
+      try {
+        // 加载JSON配置
+        const jsonModule = await modelFile.json();
+        const config = jsonModule.default || jsonModule;
+        
+        // 加载JS函数
+        const jsModule = await modelFile.js();
+        
+        // 合并配置和函数
+        return {
+          ...config,
+          formatPayload: jsModule.formatPayload,
+          formatResponse: jsModule.formatResponse,
+          ...modelFile.options,
+        };
+      } catch (error) {
+        console.error(`Failed to load model ${modelFile.id}:`, error);
+        return null;
+      }
+    })
+  );
+  
+  // 过滤掉加载失败的模型
+  models = loadedModels.filter(model => model !== null);
+  
+  // 如果没有成功加载的模型，添加默认的deepseek模型作为备用
+  if (models.length === 0) {
+    models = [{ 
+      id: 'deepseek',
+      name: 'Deepseek',
+      endpoint: 'https://api.deepseek.com/chat/completions',
+      apiKeyEnv: 'VITE_DEEPSEEK_API_KEY',
+      defaultKey: 'demo_key',
+      model: 'deepseek-chat',
+      mockEndpoint: 'http://localhost:3001/api/mock-api',
+      formatPayload: (messages, options = {}) => ({
         "model": "deepseek-chat",
         "modelId": "deepseek",
         "messages": [
@@ -18,107 +83,23 @@ export const models = [
           {"role": "user", "content": messages}
         ],
         "stream": options.stream || false,
-      };
-    },
-    formatResponse: (data) => {
-        return {
-            context: data.choices[0].message.content
-        }
-    }
-  },
-  {
-    id: 'cozeV3',
-    name: 'CozeV3',
-    endpoint: 'https://api.coze.cn/v3/chat',
-    apiKeyEnv: 'VITE_COZE_API_KEY',
-    defaultKey: 'demo_key',
-    model: 'coze-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-api',
-    // Coze模型的请求格式化函数
-    formatPayload: (messages, options = {}) => {
-      return {
-        "modelId": "cozeV3",
-        "bot_id": import.meta.env.VITE_COZE_BOT_ID,
-        "user_id": import.meta.env.VITE_COZE_USER_ID,
-        "stream": false,
-        query: '你好', chat_history: [], 
-        custom_variables: { prompt: messages },
-        // "additional_messages": [
-        //     {
-        //     "content": messages,
-        //     "content_type": "text",
-        //     "role": "user",
-        //     "type": "question"
-        //     }
-        // ],
-        // "parameters": {}
-      };
-    },
-    formatResponse: (data) => {
-        return {
-            context: data.msg
-        }
-    },
-  },
-  {
-    id: 'cozeV2',
-    name: 'CozeV2',
-    endpoint: 'https://api.coze.cn/open_api/v2/chat',
-    apiKeyEnv: 'VITE_COZE_API_KEY',
-    defaultKey: 'demo_key',
-    model: 'coze-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-api',
-    // Coze模型的请求格式化函数
-    formatPayload: (messages, options = {}) => {
-      return {
-        "modelId": "cozeV2",
-        "bot_id": import.meta.env.VITE_COZE_BOT_ID,
-        "user": import.meta.env.VITE_COZE_USER_ID,
-        query: messages,
-        chat_history: [],
-        stream: false,
-        custom_variables: { prompt: messages }
-      };
-    },
-    formatResponse: (data) => {
-        return {
-            context: data.messages[0].content
-        }
-    },
-  },
-  {
-    id: "kimi-k2-0905-preview",
-    name: "kimi-k2-0905-preview",
-    endpoint: 'https://api.moonshot.cn/v1/chat/completions',
-    apiKeyEnv: 'VITE_MOONSHOT_API_KEY',
-    defaultKey: 'demo_key',
-    model: 'coze-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-api',
-    // Coze模型的请求格式化函数
-    formatPayload: (messages, options = {}) => {
-      return {
-        "model": "kimi-k2-0905-preview",
-        "messages": [
-            {
-                "role": "system",
-                "content": messages
-            }
-        ],
-        "temperature": 0.3,
-        "max_tokens": 8192,
-        "top_p": 1,
-        "stream": false
-      };
-    },
-    formatResponse: (data) => {
-        return {
-            context: data.choices[0].message.content
-        }
-    },
+      }),
+      formatResponse: (data) => ({
+        context: data.choices?.[0]?.message?.content || ""
+      })
+    }];
   }
-];
+}
 
-// 中间件函数：根据模型格式化请求reponsoe
+// 初始化模型
+await initializeModels().catch(error => {
+  console.error('Failed to initialize models:', error);
+});
+
+// 导出模型数组（提供访问接口）
+export { models };
+
+// 中间件函数：根据模型格式化请求响应
 export function formatResponseForModel(model, response) {
   if (model.formatResponse && typeof model.formatResponse === 'function') {
     return model.formatResponse(response);
@@ -135,13 +116,10 @@ export function formatPayloadForModel(model, messages, options = {}) {
     return model.formatPayload(messages, options);
   }
   
-  // 默认格式化函数（兼容OpenAI风格）
+  // 默认的请求格式
   return {
     model: model.model,
     messages,
-    choices: {
-        messages,
-    },
     stream: options.stream || false
   };
 }
@@ -166,6 +144,7 @@ export function getModelById(id) {
 // 获取当前选中的模型
 export function getCurrentModel() {
   const savedModelId = localStorage.getItem('selected_model');
+  console.log('savedModelId: ', savedModelId, models)
   return savedModelId ? getModelById(savedModelId) : getDefaultModel();
 }
 
