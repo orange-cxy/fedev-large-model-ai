@@ -128,28 +128,7 @@ function handleMockRequest(req, res, modelId, modelName, defaultMessage) {
     const data = JSON.parse(fileContent);
     
     // 构建响应（确保使用特定模型的信息）
-    const response = {
-      id: data.response?.id || `mock-${modelId}-${Date.now()}`,
-      object: data.response?.object || 'chat.completion',
-      created: Math.floor(Date.now() / 1000),
-      model: modelName,
-      choices: data.response?.choices || [
-        {
-          index: 0,
-          message: {
-            role: 'assistant',
-            content: data.response?.choices?.[0]?.message?.content || 
-                     `这是一条从${modelName}历史记录中检索的响应。\n\n您的请求: ${userMessage || 'Hello'}`
-          },
-          finish_reason: data.response?.choices?.[0]?.finish_reason || 'stop'
-        }
-      ],
-      usage: data.response?.usage || {
-        prompt_tokens: 20,
-        completion_tokens: 15,
-        total_tokens: 35
-      }
-    };
+    const response = data.response;
     
     console.log(`返回${modelName}模拟响应，使用文件: ${randomFile}`);
     res.json(response);

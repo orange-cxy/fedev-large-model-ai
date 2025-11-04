@@ -18,6 +18,11 @@ export const models = [
         ],
         "stream": options.stream || false,
       };
+    },
+    formatResponse: (data) => {
+        return {
+            context: data.choices[0].message.content
+        }
     }
   },
   {
@@ -33,20 +38,38 @@ export const models = [
       return {
         "bot_id": import.meta.env.VITE_COZE_BOT_ID,
         "user_id": import.meta.env.VITE_COZE_USER_ID,
-        "stream": options.stream || false,
-        "additional_messages": [
-            {
-            "content": messages,
-            "content_type": "text",
-            "role": "user",
-            "type": "question"
-            }
-        ],
-        "parameters": {}
+        "stream": false,
+        query: '你好', chat_history: [], 
+        custom_variables: { prompt: messages },
+        // "additional_messages": [
+        //     {
+        //     "content": messages,
+        //     "content_type": "text",
+        //     "role": "user",
+        //     "type": "question"
+        //     }
+        // ],
+        // "parameters": {}
       };
-    }
+    },
+    formatResponse: (response) => {
+        return {
+            context: response.msg
+        }
+    },
   }
 ];
+
+// 中间件函数：根据模型格式化请求reponsoe
+export function formatResponseForModel(model, response) {
+  if (model.formatResponse && typeof model.formatResponse === 'function') {
+    return model.formatResponse(response);
+  }
+
+  return {
+    context: ""
+  }
+}
 
 // 中间件函数：根据模型格式化请求payload
 export function formatPayloadForModel(model, messages, options = {}) {

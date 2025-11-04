@@ -1,5 +1,5 @@
 import './style.css'
-import { models, getCurrentModel, setCurrentModel, formatPayloadForModel } from './models-config.js'
+import { models, getCurrentModel, setCurrentModel, formatPayloadForModel, formatResponseForModel } from './models-config.js'
 
 // 尝试导入模式配置（可能由启动脚本生成）
 let modeConfig = null;
@@ -248,13 +248,7 @@ async function saveResponseToFile(responseData) {
     model: currentModel.id,
     modelName: currentModel.name,
     response: responseData,
-    request: {
-      model: currentModel.model,
-      messages: [
-        {role: "system", content: "You are a helpful assistant."},
-        {role: "user", content: `你好 ${currentModel.name}`}
-      ]
-    }
+    request: currentModel.formatPayload(`你好 ${currentModel.name}`),
   };
   
   try {
@@ -361,8 +355,11 @@ async function fetchModelResponse() {
     }
 
     const data = await response.json();
-    const assistantReply = data.choices[0].message.content;
-    return assistantReply;
+    const assistantReply = formatResponseForModel(currentModel, data);
+    return {
+      response: data,
+      data: assistantReply,
+    }
   } catch (error) {
     console.error(`${mockMode ? '获取模拟' : '获取真实'}${currentModel.name}响应失败:`, error);
     
@@ -370,7 +367,12 @@ async function fetchModelResponse() {
     const fallbackReply = `⚫ 这是一条${mockMode ? '模拟' : '测试'}响应数据（${currentModel.name}）${mockMode ? '，用于验证Mock模式功能。' : '，用于验证保存功能。'}`;
     
     // 不在这里设置UI，让调用者来处理
-    return fallbackReply;
+    return {
+      response: null,
+      data: {
+        context: fallbackReply,
+      }
+    };
   }
 }
 
@@ -384,12 +386,12 @@ async function fetchResponse() {
 
   try {
     const response = await fetchModelResponse();
-    replyElement.textContent = response;
+    replyElement.textContent = response.data.context;
     
     // 保存响应到文件（仅在非mock模式下）
     const isMock = isMockMode();
-    if (!isMock && !response.startsWith('⚫')) {
-      await saveResponseToFile(response);
+    if (!isMock && !response.context.startsWith('⚫')) {
+      await saveResponseToFile(response.response);
     }
   } catch (error) {
     console.error('获取响应失败:', error);
