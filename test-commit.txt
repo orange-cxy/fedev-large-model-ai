@@ -1,1 +1,2 @@
-这是一个测试文件，用于验证自动提交脚本的功能。
+feat: 更新git-auto-push脚本，支持从test-commit.txt提取commit消息
+bug: 修复脚本无法检测未跟踪文件的问题
