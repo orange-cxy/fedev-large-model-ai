@@ -33,3 +33,5 @@ dist-ssr
 # Chat responses
 chat/
 *.json
+
+interview/

@@ -24,6 +24,7 @@
 - **Fetch API**：处理HTTP请求和流式响应
 - **Streams API**：处理流式数据传输
 - **EventSource/SSE**：服务器发送事件，支持实时数据推送
+- **marked.js**：轻量级Markdown渲染库，支持流式渲染和安全解析
 
 ### 后端技术
 - **Node.js**：JavaScript运行时
@@ -166,6 +167,13 @@ npm run preview
 - 自动根据环境变量配置运行模式
 - 在浏览器和Node.js环境中都能正确工作
 - 动态生成配置文件以适应不同运行环境
+
+### 5. Markdown渲染
+- 支持AI回复内容的Markdown格式渲染
+- 包含标题、列表、代码块、引用、表格等完整Markdown语法支持
+- 实现流式响应中的实时Markdown渲染
+- 具备安全的Markdown解析和错误处理机制
+- 支持不完整Markdown语法的智能处理
 
 ## 配置说明
 

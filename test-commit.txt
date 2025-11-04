@@ -21,3 +21,4 @@ feat: 添加流式请求
 fix: 修复coze中流式请求异常的问题
 test: 修复commit工具
 doc: 完善项目文档
+feat: 支持markdown文本实时渲染

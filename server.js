@@ -214,7 +214,55 @@ function handleMockRequest(req, res, defaultMessage) {
     
     // 如果没有历史记录或读取失败，生成默认响应
     if (!useHistory) {
-      responseContent = `${defaultMessage}\n\n您的请求: ${userMessage || 'Hello'}\n\n这是一个模拟的流式响应示例。在实际应用中，您将看到文本逐字显示，就像我现在正在为您生成回答一样。`;
+      // 添加丰富的Markdown测试内容
+      responseContent = `${defaultMessage}
+
+# Markdown测试内容
+
+## 这是二级标题
+### 这是三级标题
+
+您的请求: ${userMessage || 'Hello'}
+
+这是一个**加粗文本**和*斜体文本*的示例。
+
+## 列表测试
+
+### 无序列表
+- 项目一
+- 项目二
+- 项目三
+
+### 有序列表
+1. 第一步
+2. 第二步
+3. 第三步
+
+## 代码块
+
+\`\`\`javascript
+function hello() {
+  console.log('Hello, Markdown!');
+}
+\`\`\`
+
+## 引用
+
+> 这是一段引用内容
+> 可以有多行
+
+## 链接和图片
+
+[Markdown官方文档](https://www.markdownguide.org)
+
+## 表格
+
+| 名称 | 描述 | 值 |
+|------|------|----|
+| 特性1 | 测试特性 | 100 |
+| 特性2 | 另一个测试 | 200 |
+
+这是一个模拟的流式响应示例。在实际应用中，您将看到文本逐字显示，就像我现在正在为您生成回答一样。`;
     }
     
     console.log(`返回${req.body.modelId}${isStream ? '流式' : ''}模拟响应${useHistory ? '，使用历史文件' : '，使用默认内容'}`);

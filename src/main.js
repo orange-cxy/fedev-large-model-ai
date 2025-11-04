@@ -3,6 +3,40 @@ import { models, getCurrentModel, setCurrentModel, formatPayloadForModel, format
 
 // 尝试导入模式配置（可能由启动脚本生成）
 let modeConfig = null;
+
+// 安全的Markdown渲染函数，用于流式响应
+function safeMarkdownRender(text) {
+  try {
+    // 简单检查文本是否可能包含不完整的Markdown语法
+    // 这是一个基本实现，可以根据需要扩展
+    const hasUnclosedCodeBlock = (text.match(/```/g) || []).length % 2 !== 0;
+    const hasUnclosedLink = (text.match(/\[/g) || []).length > (text.match(/\)/g) || []).length;
+    
+    // 如果存在不完整的代码块，尝试关闭它
+    if (hasUnclosedCodeBlock) {
+      text += '\n```';
+    }
+    
+    // 渲染Markdown
+    return marked.parse(text, {
+      breaks: true, // 将换行符转换为<br>
+      gfm: true,    // 使用GitHub风格的Markdown
+      // 禁用一些在流式渲染中可能有问题的功能
+      headerIds: false,
+      mangle: false
+    });
+  } catch (e) {
+    console.warn('Markdown渲染错误，使用纯文本:', e);
+    // 转义HTML特殊字符
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\n/g, '<br>');
+  }
+}
 try {
   // 使用动态导入避免构建错误
   import('./mode-config.js').then(config => {
@@ -39,7 +73,7 @@ app.innerHTML = `
     <!-- 响应显示区域 -->
     <div class="response-area">
       <h3>AI回复：</h3>
-      <div id="reply" class="reply">请输入问题并发送</div>
+      <div id="reply" class="reply markdown-content">请输入问题并发送</div>
     </div>
   </div>
 `;
@@ -73,7 +107,7 @@ style.textContent = `
     border-radius: 8px;
     border-left: 4px solid #3498db;
     min-height: 60px;
-    display: flex;
+    // display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
@@ -501,7 +535,8 @@ async function fetchModelResponse(message, onStreamChunk) {
 // 获取响应的主函数，支持流式显示
 async function fetchResponse(message) {
   const replyElement = document.getElementById('reply');
-  replyElement.textContent = '正在生成回复...';
+    replyElement.classList.add('markdown-content');
+    replyElement.textContent = '正在生成回复...';
   
   // 更新状态显示
   updateStatusDisplay();
@@ -516,7 +551,10 @@ async function fetchResponse(message) {
     const onStreamChunk = (textChunk, rawChunk) => {
       if (textChunk) {
         fullResponse += textChunk;
-        replyElement.textContent = fullResponse;
+        // 添加markdown-content类以应用样式
+        replyElement.classList.add('markdown-content');
+        // 使用安全的Markdown渲染函数
+        replyElement.innerHTML = safeMarkdownRender(fullResponse);
         lastResponseTime = Date.now();
       }
       
@@ -543,8 +581,9 @@ async function fetchResponse(message) {
     streamEnded = true;
     clearInterval(checkTimeout);
     
-    // 更新最终响应
-    replyElement.textContent = finalResponse.data.context;
+    // 更新最终响应，确保Markdown渲染
+    replyElement.classList.add('markdown-content');
+    replyElement.innerHTML = safeMarkdownRender(finalResponse.data.context);
     
     // 保存响应到文件（仅在非mock模式下）
     const isMock = isMockMode();
@@ -553,7 +592,7 @@ async function fetchResponse(message) {
     }
   } catch (error) {
     console.error('获取响应失败:', error);
-    replyElement.textContent = `获取响应失败: ${error.message}`;
+    replyElement.innerHTML = safeMarkdownRender(`获取响应失败: ${error.message}`);
   }
 }
 
