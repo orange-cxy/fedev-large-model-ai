@@ -1,2 +1,0 @@
-const e=(e,t={})=>({messages:[{role:"system",content:e}],temperature:.3,max_tokens:8192,top_p:1,stream:!1}),t=e=>({context:e.choices[0].message.content});export{e as formatPayload,t as formatResponse};
-//# sourceMappingURL=kimi-k2-0905-preview-hEbH4Fv3.js.map

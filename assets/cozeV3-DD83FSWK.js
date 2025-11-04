@@ -1,0 +1,2 @@
+const o=(o,t={})=>({modelId:"cozeV3",bot_id:void 0,user_id:void 0,stream:t.stream||!1,query:"你好",chat_history:[],custom_variables:{prompt:o}}),t=o=>({context:o.msg});export{o as formatPayload,t as formatResponse};
+//# sourceMappingURL=cozeV3-DD83FSWK.js.map
