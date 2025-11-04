@@ -3,6 +3,7 @@
 这是一个基于现代Web技术栈构建的AI交互前端项目，用于与Deepseek API进行交互，并支持模拟模式和真实模式的灵活切换。项目采用Vite作为构建工具，Express作为后端服务，实现了完整的AI对话功能。
 
 项目地址：https://github.com/orange-cxy/fedev-large-model-ai
+预览地址：https://orange-cxy.github.io/fedev-large-model-ai/
 
 ## 项目特点
 
