@@ -26,12 +26,12 @@ if [ ! -f "test-commit.txt" ]; then
 fi
 
 # 从test-commit.txt文件中提取最新的commit记录
-# 过滤出以 feat: | bug: | refactor: | doc: 开头的最新行
-LATEST_COMMIT=$(grep -E "^(feat|bug|refactor|doc):" test-commit.txt | tail -n 1)
+# 过滤出以 feat: | fix: | refactor: | doc: 开头的最新行
+LATEST_COMMIT=$(grep -E "^(feat|fix|refactor|doc|test):" test-commit.txt | tail -n 1)
 
 if [ -z "$LATEST_COMMIT" ]; then
   echo "错误：未在test-commit.txt文件中找到有效的commit记录"
-  echo "请使用格式: feat: | bug: | refactor: | doc: 开头的记录"
+  echo "请使用格式: feat: | fix: | refactor: | doc: 开头的记录"
   exit 1
 fi
 
