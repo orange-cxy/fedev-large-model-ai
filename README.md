@@ -27,62 +27,14 @@
 
 ## 项目架构
 
-### 架构图
+项目采用前后端分离架构，通过模式切换机制支持不同环境下的API调用方式。
 
-```svg
-<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-  <!-- 背景和标题 -->
-  <rect width="800" height="600" fill="#f8f9fa" rx="10" ry="10"/>
-  <text x="400" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">Deepseek AI 前端项目架构</text>
-  
-  <!-- 前端模块 -->
-  <rect x="50" y="80" width="300" height="120" fill="#e3f2fd" stroke="#2196f3" stroke-width="2" rx="5" ry="5"/>
-  <text x="200" y="120" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">前端应用</text>
-  <text x="200" y="150" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">HTML5 + CSS3 + JavaScript</text>
-  <text x="200" y="170" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Vite 构建工具</text>
-  
-  <!-- 模式切换 -->
-  <rect x="50" y="220" width="300" height="80" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="5" ry="5"/>
-  <text x="200" y="255" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">模式管理</text>
-  <text x="200" y="275" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">localStorage / URL参数 / 环境变量</text>
-  
-  <!-- 后端模块 -->
-  <rect x="50" y="320" width="300" height="120" fill="#fff3e0" stroke="#ff9800" stroke-width="2" rx="5" ry="5"/>
-  <text x="200" y="360" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle">Node.js 后端</text>
-  <text x="200" y="385" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Express 服务器</text>
-  <text x="200" y="410" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">CORS + 文件系统</text>
-  
-  <!-- API服务 -->
-  <rect x="500" y="150" width="250" height="90" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" rx="5" ry="5"/>
-  <text x="625" y="180" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Mock API</text>
-  <text x="625" y="205" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">模拟Deepseek响应</text>
-  
-  <rect x="500" y="270" width="250" height="90" fill="#ffebee" stroke="#f44336" stroke-width="2" rx="5" ry="5"/>
-  <text x="625" y="300" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">真实Deepseek API</text>
-  <text x="625" y="325" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">实际AI模型调用</text>
-  
-  <!-- 存储 -->
-  <rect x="500" y="390" width="250" height="90" fill="#e0f7fa" stroke="#00bcd4" stroke-width="2" rx="5" ry="5"/>
-  <text x="625" y="420" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">本地存储</text>
-  <text x="625" y="445" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">JSON文件保存对话历史</text>
-  
-  <!-- 连接线 -->
-  <line x1="200" y1="200" x2="200" y2="220" stroke="#666" stroke-width="2"/>
-  <line x1="200" y1="300" x2="200" y2="320" stroke="#666" stroke-width="2"/>
-  <line x1="350" y1="140" x2="625" y2="150" stroke="#666" stroke-width="2" stroke-dasharray="5,5"/>
-  <line x1="350" y1="140" x2="625" y2="270" stroke="#666" stroke-width="2"/>
-  <line x1="350" y1="380" x2="625" y2="440" stroke="#666" stroke-width="2"/>
-  
-  <!-- 箭头 -->
-  <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
-    </marker>
-  </defs>
-  <line x1="625" y1="240" x2="625" y2="270" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="350" y1="380" x2="625" y2="390" stroke="#666" stroke-width="2" marker-end="url(#arrowhead)"/>
-</svg>
-```
+![Deepseek AI 项目架构](doc/readme_01.png)
+
+* 前端应用：基于HTML5、CSS3和JavaScript构建，使用Vite作为构建工具
+* 模式管理：支持多种模式切换方式，包括localStorage、URL参数和环境变量
+* 后端服务：Node.js Express服务器，提供API端点和数据持久化
+* 数据存储：本地JSON文件存储对话历史记录
 
 ### 架构说明
 
@@ -239,29 +191,3 @@ npm run preview
 ## 许可证
 
 MIT License
-    
-    // 显示成功消息
-    showNotification('留言发送成功！', 'success');
-}, 1500);
-```
-
-## 浏览器兼容性
-
-该项目兼容所有现代浏览器，包括：
-- Chrome（最新版）
-- Firefox（最新版）
-- Safari（最新版）
-- Edge（最新版）
-
-对于旧版浏览器，可能需要添加适当的polyfills。
-
-## 性能建议
-
-1. 压缩CSS和JavaScript文件以减小文件大小
-2. 优化任何添加的图像资源
-3. 考虑使用内容分发网络（CDN）来托管静态资源
-4. 添加适当的缓存策略
-
-## 许可证
-
-该项目采用MIT许可证。详情请查看LICENSE文件。

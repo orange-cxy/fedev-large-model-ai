@@ -1,3 +1,4 @@
 feat: 更新git-auto-push脚本，支持从test-commit.txt提取commit消息
 bug: 修复脚本无法检测未跟踪文件的问题
 doc: 完善README文档，添加项目介绍、技术栈、架构图和未来优化点
+doc: 更新README使用PNG图片替代SVG代码，提高兼容性
