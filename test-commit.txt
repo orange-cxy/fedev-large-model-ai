@@ -11,3 +11,5 @@ feat: 安装gh-pages依赖并修复部署命令参数格式
 fix: 修复package.json中缺少逗号的语法错误
 feat: 添加预览地址
 feat: 添加coze，支持多模型切换测试
+feat: 统一模拟API接口，优化handleMockRequest函数处理逻辑
+feat: 优化models-config，添加模型特定的响应格式化函数

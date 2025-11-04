@@ -327,7 +327,7 @@ async function fetchModelResponse() {
       });
     } else {
       // 真实模式：调用真实API
-      console.log(`使用${currentModel.name}的真实API`);
+      console.log(`使用${currentModel.name}的真实API`, currentModel.apiKeyEnv, import.meta.env);
       // 获取API密钥
       const apiKey = import.meta.env[currentModel.apiKeyEnv] || currentModel.defaultKey;
       
@@ -390,7 +390,7 @@ async function fetchResponse() {
     
     // 保存响应到文件（仅在非mock模式下）
     const isMock = isMockMode();
-    if (!isMock && !response.context.startsWith('⚫')) {
+    if (!isMock && !response.data.context.startsWith('⚫')) {
       await saveResponseToFile(response.response);
     }
   } catch (error) {

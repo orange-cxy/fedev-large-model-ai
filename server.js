@@ -22,12 +22,12 @@ if (!isMockMode && !fs.existsSync(chatDir)) {
 }
 
 // 通用模拟API函数
-function createMockResponse(modelId, modelName, defaultMessage) {
+function createMockResponse(modelId, defaultMessage) {
   return {
     id: `mock-${modelId}-response-${Date.now()}`,
     object: 'chat.completion',
     created: Math.floor(Date.now() / 1000),
-    model: modelName,
+    model: `${modelId}-chat`,
     choices: [
       {
         index: 0,
@@ -57,7 +57,11 @@ function getModelHistoryFiles(modelId) {
     // 尝试按模型ID过滤文件
     if (modelId) {
       // 方法1: 根据文件名中的模型ID过滤
-      const modelFiles = allFiles.filter(file => file.includes(`-${modelId}-`));
+      const modelFiles = allFiles.filter(file => {
+        console.log('file: ', file, file.fileName)
+        return file.includes(`-${modelId}-`);
+      });
+      console.log("modelFiles: ", modelFiles.length, modelId)
       if (modelFiles.length > 0) {
         return modelFiles;
       }
@@ -90,10 +94,10 @@ function getModelHistoryFiles(modelId) {
 }
 
 // 处理模拟请求的通用函数
-function handleMockRequest(req, res, modelId, modelName, defaultMessage) {
+function handleMockRequest(req, res, defaultMessage) {
   try {
     // 记录请求数据，用于调试
-    console.log(`${modelName}模拟API收到请求:`, JSON.stringify(req.body, null, 2));
+    console.log(`${req.body.modelId}模拟API收到请求:`, JSON.stringify(req.body, null, 2));
     
     // 尝试从请求中提取用户消息内容（适配不同的请求格式）
     let userMessage = '';
@@ -107,13 +111,12 @@ function handleMockRequest(req, res, modelId, modelName, defaultMessage) {
     }
     
     // 读取特定模型的历史记录文件
-    const files = getModelHistoryFiles(modelId);
+    const files = getModelHistoryFiles(req.body.modelId);
     
     if (files.length === 0) {
       // 如果没有历史记录，返回一个默认的模拟响应
       const defaultResponse = createMockResponse(
-        modelId, 
-        modelName,
+        req.body.modelId, 
         `${defaultMessage}\n\n您的请求: ${userMessage || 'Hello'}`
       );
       return res.json(defaultResponse);
@@ -130,10 +133,10 @@ function handleMockRequest(req, res, modelId, modelName, defaultMessage) {
     // 构建响应（确保使用特定模型的信息）
     const response = data.response;
     
-    console.log(`返回${modelName}模拟响应，使用文件: ${randomFile}`);
+    console.log(`返回${req.body.modelId}模拟响应，使用文件: ${randomFile}`);
     res.json(response);
   } catch (error) {
-    console.error(`获取${modelName}模拟响应失败:`, error);
+    console.error(`获取${req.body.modelId}模拟响应失败:`, error);
     res.status(500).json({
       error: '获取模拟响应失败',
       message: error.message
@@ -142,24 +145,11 @@ function handleMockRequest(req, res, modelId, modelName, defaultMessage) {
 }
 
 // 模拟的Deepseek API端点
-app.post('/api/mock-deepseek', (req, res) => {
+app.post('/api/mock-api', (req, res) => {
   handleMockRequest(
     req, 
-    res, 
-    'deepseek', 
-    'deepseek-chat',
+    res,
     '您好！这是来自模拟Deepseek API的响应。我可以帮助您解答各种问题。'
-  );
-});
-
-// 模拟的Coze API端点
-app.post('/api/mock-coze', (req, res) => {
-  handleMockRequest(
-    req, 
-    res, 
-    'coze', 
-    'coze-chat',
-    '您好！这是来自模拟Coze API的响应。我可以协助您完成各种任务和回答问题。'
   );
 });
 

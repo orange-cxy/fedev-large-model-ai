@@ -7,11 +7,12 @@ export const models = [
     apiKeyEnv: 'VITE_DEEPSEEK_API_KEY',
     defaultKey: 'demo_key',
     model: 'deepseek-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-deepseek',
+    mockEndpoint: 'http://localhost:3001/api/mock-api',
     // Deepseek模型的请求格式化函数
     formatPayload: (messages, options = {}) => {
       return {
         "model": "deepseek-chat",
+        "modelId": "deepseek",
         "messages": [
           {"role": "system", "content": "You are a helpful assistant."},
           {"role": "user", "content": messages}
@@ -26,16 +27,17 @@ export const models = [
     }
   },
   {
-    id: 'coze',
-    name: 'Coze',
+    id: 'cozeV3',
+    name: 'CozeV3',
     endpoint: 'https://api.coze.cn/v3/chat',
     apiKeyEnv: 'VITE_COZE_API_KEY',
     defaultKey: 'demo_key',
     model: 'coze-chat',
-    mockEndpoint: 'http://localhost:3001/api/mock-coze',
+    mockEndpoint: 'http://localhost:3001/api/mock-api',
     // Coze模型的请求格式化函数
     formatPayload: (messages, options = {}) => {
       return {
+        "modelId": "cozeV3",
         "bot_id": import.meta.env.VITE_COZE_BOT_ID,
         "user_id": import.meta.env.VITE_COZE_USER_ID,
         "stream": false,
@@ -52,9 +54,65 @@ export const models = [
         // "parameters": {}
       };
     },
-    formatResponse: (response) => {
+    formatResponse: (data) => {
         return {
-            context: response.msg
+            context: data.msg
+        }
+    },
+  },
+  {
+    id: 'cozeV2',
+    name: 'CozeV2',
+    endpoint: 'https://api.coze.cn/open_api/v2/chat',
+    apiKeyEnv: 'VITE_COZE_API_KEY',
+    defaultKey: 'demo_key',
+    model: 'coze-chat',
+    mockEndpoint: 'http://localhost:3001/api/mock-api',
+    // Coze模型的请求格式化函数
+    formatPayload: (messages, options = {}) => {
+      return {
+        "modelId": "cozeV2",
+        "bot_id": import.meta.env.VITE_COZE_BOT_ID,
+        "user": import.meta.env.VITE_COZE_USER_ID,
+        query: messages,
+        chat_history: [],
+        stream: false,
+        custom_variables: { prompt: messages }
+      };
+    },
+    formatResponse: (data) => {
+        return {
+            context: data.messages[0].content
+        }
+    },
+  },
+  {
+    id: "kimi-k2-0905-preview",
+    name: "kimi-k2-0905-preview",
+    endpoint: 'https://api.moonshot.cn/v1/chat/completions',
+    apiKeyEnv: 'VITE_MOONSHOT_API_KEY',
+    defaultKey: 'demo_key',
+    model: 'coze-chat',
+    mockEndpoint: 'http://localhost:3001/api/mock-api',
+    // Coze模型的请求格式化函数
+    formatPayload: (messages, options = {}) => {
+      return {
+        "model": "kimi-k2-0905-preview",
+        "messages": [
+            {
+                "role": "system",
+                "content": messages
+            }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 8192,
+        "top_p": 1,
+        "stream": false
+      };
+    },
+    formatResponse: (data) => {
+        return {
+            context: data.choices[0].message.content
         }
     },
   }
@@ -80,7 +138,10 @@ export function formatPayloadForModel(model, messages, options = {}) {
   // 默认格式化函数（兼容OpenAI风格）
   return {
     model: model.model,
-    messages: messages,
+    messages,
+    choices: {
+        messages,
+    },
     stream: options.stream || false
   };
 }
