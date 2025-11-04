@@ -1,0 +1,2 @@
+const e=(e,s={})=>({model:"deepseek-chat",modelId:"deepseek",messages:[{role:"system",content:"You are a helpful assistant."},{role:"user",content:e}],stream:s.stream||!1}),s=e=>({context:e.choices[0].message.content});export{e as formatPayload,s as formatResponse};
+//# sourceMappingURL=deepseek-BD3r4UzN.js.map

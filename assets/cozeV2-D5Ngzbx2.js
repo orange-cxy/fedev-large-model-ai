@@ -1,0 +1,2 @@
+const e="cozeV2",o="CozeV2",a="https://api.coze.cn/open_api/v2/chat",t="VITE_COZE_API_KEY",p="demo_key",c="coze-chat",n="http://localhost:3001/api/mock-api";var i={id:e,name:o,endpoint:a,apiKeyEnv:t,defaultKey:p,model:c,mockEndpoint:n};export{t as apiKeyEnv,i as default,p as defaultKey,a as endpoint,e as id,n as mockEndpoint,c as model,o as name};
+//# sourceMappingURL=cozeV2-D5Ngzbx2.js.map

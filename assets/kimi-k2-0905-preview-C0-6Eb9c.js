@@ -1,0 +1,2 @@
+const e="kimi-k2-0905-preview",i="kimi-k2-0905-preview",o="https://api.moonshot.cn/v1/chat/completions",t="VITE_MOONSHOT_API_KEY",p="demo_key",a="kimi-k2-0905-preview",m="http://localhost:3001/api/mock-api";var n={id:e,name:i,endpoint:o,apiKeyEnv:t,defaultKey:p,model:a,mockEndpoint:m};export{t as apiKeyEnv,n as default,p as defaultKey,o as endpoint,e as id,m as mockEndpoint,a as model,i as name};
+//# sourceMappingURL=kimi-k2-0905-preview-C0-6Eb9c.js.map

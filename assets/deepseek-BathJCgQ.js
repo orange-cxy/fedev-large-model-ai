@@ -1,0 +1,2 @@
+const e="deepseek",p="Deepseek",t="https://api.deepseek.com/chat/completions",o="VITE_DEEPSEEK_API_KEY",a="demo_key",d="deepseek-chat",s="http://localhost:3001/api/mock-api";var c={id:e,name:p,endpoint:t,apiKeyEnv:o,defaultKey:a,model:d,mockEndpoint:s};export{o as apiKeyEnv,c as default,a as defaultKey,t as endpoint,e as id,s as mockEndpoint,d as model,p as name};
+//# sourceMappingURL=deepseek-BathJCgQ.js.map
