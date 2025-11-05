@@ -1,0 +1,159 @@
+/* src/styles/components/ModeSwitcher.css */
+
+.mode-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  min-height: 48px;
+}
+
+.mode-switcher-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* 开关样式 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-color);
+  transition: var(--transition-normal);
+  border-radius: var(--border-radius-full);
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: var(--transition-normal);
+  border-radius: 50%;
+}
+
+input:checked + .switch-slider {
+  background-color: var(--primary-color);
+}
+
+input:focus + .switch-slider {
+  box-shadow: 0 0 1px var(--primary-color);
+}
+
+input:checked + .switch-slider:before {
+  transform: translateX(24px);
+}
+
+/* 模式指示器 */
+.mode-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.mode-indicator.mock-mode {
+  color: var(--mock-mode-color);
+}
+
+.mode-indicator.real-mode {
+  color: var(--real-mode-color);
+}
+
+.mode-indicator-icon {
+  font-size: var(--font-size-md);
+}
+
+/* 禁用状态 */
+.mode-switcher.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.mode-switcher.disabled .switch {
+  cursor: not-allowed;
+}
+
+/* 切换通知样式 */
+.mode-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  z-index: var(--z-notification);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.mode-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.mode-notification.fade-out {
+  transform: translateX(0);
+  opacity: 0;
+}
+
+.mode-notification.mock-mode {
+  border-left: 4px solid var(--mock-mode-color);
+}
+
+.mode-notification.real-mode {
+  border-left: 4px solid var(--real-mode-color);
+}
+
+/* 响应式调整 */
+@media (max-width: var(--breakpoint-sm)) {
+  .mode-switcher {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+  
+  .mode-switcher-label {
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .mode-indicator {
+    justify-content: center;
+  }
+}
+
+/* 深色模式适配已通过CSS变量自动处理 */

@@ -1,0 +1,73 @@
+/* src/styles/components/ModelSelector.css */
+
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  min-height: 48px;
+}
+
+.model-selector label {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.model-selector select {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  min-width: 160px;
+  transition: border-color var(--transition-fast);
+}
+
+.model-selector select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.model-selector select:hover:not(:disabled) {
+  border-color: var(--text-secondary);
+}
+
+.model-selector select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 模型选择器在禁用状态下的样式 */
+.model-selector.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 响应式调整 */
+@media (max-width: var(--breakpoint-sm)) {
+  .model-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+  
+  .model-selector label {
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .model-selector select {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+/* 深色模式适配已通过CSS变量自动处理 */

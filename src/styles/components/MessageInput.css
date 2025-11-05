@@ -1,0 +1,202 @@
+/* src/styles/components/MessageInput.css */
+
+.message-input-container {
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-md);
+  max-width: 100%;
+}
+
+.message-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.message-input-area {
+  position: relative;
+}
+
+.message-input {
+  width: 100%;
+  min-height: 80px;
+  max-height: 200px;
+  padding: var(--spacing-md);
+  padding-bottom: 40px; /* 为底部按钮留出空间 */
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  overflow-y: auto;
+}
+
+.message-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+.message-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.message-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 输入框底部的按钮容器 */
+.message-input-actions {
+  position: absolute;
+  bottom: var(--spacing-sm);
+  right: var(--spacing-sm);
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.message-input-button {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--border-radius-md);
+  min-height: 32px;
+}
+
+.send-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.send-button:disabled {
+  background-color: var(--text-secondary);
+  cursor: not-allowed;
+}
+
+.clear-button {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  min-width: auto;
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+.clear-button:hover:not(:disabled) {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+}
+
+.clear-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 提示文本 */
+.input-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
+  text-align: center;
+}
+
+/* 字数统计 */
+.char-count {
+  position: absolute;
+  bottom: var(--spacing-sm);
+  left: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.char-count.near-limit {
+  color: var(--warning-color);
+}
+
+.char-count.exceeded {
+  color: var(--error-color);
+}
+
+/* 通知样式 */
+.input-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  z-index: var(--z-notification);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.input-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.input-notification.fade-out {
+  transform: translateX(0);
+  opacity: 0;
+}
+
+.input-notification.success {
+  border-left: 4px solid var(--success-color);
+}
+
+.input-notification.error {
+  border-left: 4px solid var(--error-color);
+}
+
+/* 响应式调整 */
+@media (max-width: var(--breakpoint-sm)) {
+  .message-input-container {
+    padding: var(--spacing-sm);
+  }
+  
+  .message-input {
+    min-height: 60px;
+    padding: var(--spacing-sm);
+    padding-bottom: 40px;
+  }
+  
+  .message-input-actions {
+    flex-wrap: wrap;
+  }
+  
+  .char-count {
+    display: none;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-input-container {
+  animation: fadeIn var(--transition-normal);
+}
+
+/* 深色模式适配已通过CSS变量自动处理 */

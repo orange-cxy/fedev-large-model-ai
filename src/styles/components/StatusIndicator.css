@@ -1,0 +1,213 @@
+/* src/styles/components/StatusIndicator.css */
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  min-height: 48px;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.status-items {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+/* 状态项样式 */
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.status-item:hover {
+  background-color: var(--background-color);
+}
+
+.status-icon {
+  font-size: var(--font-size-md);
+}
+
+.status-text {
+  font-weight: var(--font-weight-medium);
+}
+
+/* 不同类型的状态样式 */
+.status-item.status-mode {
+  color: var(--mock-mode-color);
+}
+
+.status-item.status-mode.real-mode {
+  color: var(--real-mode-color);
+}
+
+.status-item.status-model {
+  color: var(--text-secondary);
+}
+
+.status-item.status-loading {
+  color: var(--loading-color);
+  animation: pulse var(--transition-slow) infinite alternate;
+}
+
+.status-item.status-error {
+  color: var(--error-status-color);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 清除历史按钮 */
+.clear-history-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.clear-history-btn:hover {
+  background-color: var(--error-color);
+  color: white;
+  border-color: var(--error-color);
+}
+
+.clear-history-btn:active {
+  transform: scale(0.98);
+}
+
+/* 通知样式 */
+.status-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  z-index: var(--z-notification);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.status-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.status-notification.fade-out {
+  transform: translateX(0);
+  opacity: 0;
+}
+
+/* 确认对话框样式增强 */
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.confirm-dialog {
+  background-color: var(--surface-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  max-width: 400px;
+  width: 90%;
+  box-shadow: var(--shadow-xl);
+  animation: dialogFadeIn var(--transition-normal);
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirm-dialog-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-md);
+  color: var(--error-color);
+}
+
+.confirm-dialog-message {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-secondary);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
+.confirm-dialog-button {
+  padding: var(--spacing-xs) var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-md);
+}
+
+/* 响应式调整 */
+@media (max-width: var(--breakpoint-sm)) {
+  .status-indicator {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+  }
+  
+  .status-items {
+    justify-content: center;
+    gap: var(--spacing-md);
+  }
+  
+  .status-item {
+    font-size: var(--font-size-xs);
+  }
+  
+  .clear-history-btn {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* 深色模式适配已通过CSS变量自动处理 */
